@@ -21,6 +21,20 @@ class Dict(dict):
         self[key] = value
 
 
+def next_id(t = None):
+    if t is None:
+        t = time.time()
+    return '%015d%s000' % (int(t * 1000), uuid.uuid4().hex)
+
+
+def _profiling(start, sql = ''):
+    t = time.time() - start
+    if t > 0.1:
+        logging.warning('[PROFILING] [DB] %s: %s' % (t, sql))
+    else:
+        logging.info('[PROFILING] [DB] %s: %s' % (t, sql))
+
+
 class DBError(Exception):
     pass
 
@@ -36,6 +50,7 @@ class _LazyConnection(object):
     def cursor(self):
         if self.connection is None:
             connection = engine.connect()
+            logging.info('open connection <%s>...' % hex(id(connection)))
             self.connection = connection
         return self.connection.cursor()
 
@@ -49,6 +64,7 @@ class _LazyConnection(object):
         if self.connection:
             connection = self.connection
             self.connection = None
+            logging.info('close connection <%s>...' % hex(id(connection)))
             connection.close()
 
 
@@ -59,6 +75,31 @@ class _Engine(object):
 
     def connect(self):
         return self._connect()
+
+
+# 持有数据库连接的上下文对象
+class _DbCtx(threading.local):
+    def __init__(self):
+        self.connection = None
+        self.transactions = 0
+
+    def is_init(self):
+        return not (self.connection is None)
+
+    def init(self):
+        logging.info('open lazy connection...')
+        self.connection = _LazyConnection()
+        self.transactions = 0
+
+    def cleanup(self):
+        self.connection.cleanup()
+        self.connection = None
+
+    def cursor(self):
+        self.connection.cursor()
+
+_db_ctx = _DbCtx()          # _db_ctx是threadlocal对象，所以，它持有的数据库连接对于每个线程看到的都是不一样的。
+
 
 engine = None
 
@@ -75,29 +116,7 @@ def create_engine(user, password, database, host='127.0.0.1', port=3306, **kw):
     params.update(kw)
     params['buffered'] = True
     engine = _Engine(lambda: mysql.connector.connect(**params))
-
-
-# 持有数据库连接的上下文对象
-class _DbCtx(threading.local):
-    def __init__(self):
-        self.connection = None
-        self.transactions = 0
-
-    def is_init(self):
-        return not (self.connection is None)
-
-    def init(self):
-        self.connection = _LazyConnection()
-        self.transactions = 0
-
-    def cleanup(self):
-        self.connection.cleanup()
-        self.connection = None
-
-    def cursor(self):
-        self.connection.cursor()
-
-_db_ctx = _DbCtx()          # _db_ctx是threadlocal对象，所以，它持有的数据库连接对于每个线程看到的都是不一样的。
+    logging.info('Init mysql engine <%s> ok.' % hex(id(engine)))
 
 
 # 实现数据库连接的上下文
@@ -138,6 +157,7 @@ class _TransactionCtx(object):
             _db_ctx.init()
             self.should_close_conn = True
         _db_ctx.transactions += 1
+        logging.info('begin transaction...' if _db_ctx.transactions==1 else 'join current transaction...')
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -155,15 +175,21 @@ class _TransactionCtx(object):
 
     def commit(self):
         global _db_ctx
+        logging.info('commit transaction...')
         try:
             _db_ctx.connection.commit()
+            logging.info('commit ok.')
         except:
+            logging.warning('commit failed. try rollback...')
             _db_ctx.connection.rollback()
+            logging.warning('rollback ok.')
             raise
 
     def rollback(self):
         global _db_ctx
+        logging.warning('rollback transaction...')
         _db_ctx.connection.rollback()
+        logging.info('rollback ok.')
 
 
 def transaction():
@@ -183,6 +209,7 @@ def _select(sql, one, *args):
     global _db_ctx
     cursor = None
     sql = sql.replace('?', '%s')
+    logging.info('SQL: %s, ARGS: %s' % (sql, args))
     try:
         cursor = _db_ctx.connection.cursor()
         cursor.execute(sql, args)
@@ -219,11 +246,13 @@ def select_int(sql, *args):
 def select(sql, *args):
     return _select(sql, False, *args)
 
+
 @with_connection
-def _update(sql,*args):
+def _update(sql, *args):
     global _db_ctx
     cursor = None
     sql = sql.replace('?', '%s')
+    logging.info('SQL: %s, ARGS: %s' % (sql, args))
     try:
         cursor = _db_ctx.connection.cursor()
         cursor.execute(sql, args)
