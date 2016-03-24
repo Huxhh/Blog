@@ -23,7 +23,6 @@ class Field(object):
         self._order = Field._count
         Field._count += 1
 
-
     @property
     def default(self):
         return self._default
@@ -110,7 +109,7 @@ def _gen_sql(table_name, mappings):
     sql = ['-- generating SQL for %s:' % table_name, 'create table `%s` (' % table_name]
     for f in sorted(mappings.values(), lambda x, y: cmp(x._order, y._order)):
         if not hasattr(f, 'ddl'):
-            raise StandardError('no ddl in field "%s".' % f)
+            raise StandardError('no ddl in field "%s".' % n)
         ddl = f.ddl
         nullable = f.nullable
         if f.primary_key:
@@ -228,7 +227,7 @@ class Model(dict):
                 else:
                     arg = v.default
                     setattr(self, k, arg)
-                L.append('`%s`=?' % k)
+                L.append("'%s'=?" % k)
                 args.append(arg)
         pk = self.__primary_key__.name
         args.append(getattr(self, pk))
@@ -254,7 +253,7 @@ class Model(dict):
         return self
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     db.create_engine('www-data', 'www-data', 'test')
     db.update('drop table if exists user')

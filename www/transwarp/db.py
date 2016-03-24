@@ -142,6 +142,7 @@ def connection():
 
 # 编写装饰器
 def with_connection(func):
+    @functools.wraps(func)
     def _wrapper(*args, **kw):
         with _ConnectionCtx():
             return func(*args, **kw)
@@ -198,9 +199,12 @@ def transaction():
 
 # 事务装饰器
 def with_transaction(func):
+    @functools.wraps(func)
     def _wrapper(*args, **kw):
+        _start = time.time()
         with _TransactionCtx():
             return func(*args, **kw)
+        _profiling(_start)
     return _wrapper
 
 
@@ -258,6 +262,7 @@ def _update(sql, *args):
         cursor.execute(sql, args)
         r = cursor.rowcount
         if _db_ctx.transactions == 0:
+            logging.info('auto commit')
             _db_ctx.connection.commit()
         return r
     finally:
@@ -267,7 +272,7 @@ def _update(sql, *args):
 
 def insert(table, **kw):
     cols, args = zip(*kw.iteritems())
-    sql = 'insert into `%s` (%s) values (%s)' % (table, ','.join(['`%s`' % col for col in cols]), ','.join(['?' for i in range(len(cols))]))
+    sql = 'insert into `%s` (%s) values (%s)' % (table, ','.join(['`%s`' % col for col in cols]), ','.join(['?' for i in range(len(cols))])) # 这句貌似有问题
     return _update(sql, *args)
 
 
