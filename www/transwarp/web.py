@@ -336,3 +336,47 @@ def _build_regex(path):
     return ''.join(re_list)
 
 
+class Route(object):
+	def __init__(self, func):
+		self.path = func.__web_route__
+		self.method = func.__web_method__
+		self.is_static = _re_route.search(self.path) is None
+		if not self.is_static:
+			self.route = re.compile(_build_regex(self.path))
+		self.func = func
+
+	def match(self, url):
+		m = self.path.match(url)
+		if m:
+			return m.groups()
+		return None
+
+	def __call__(self, *args):
+		return self.func(*args)
+
+	def __str__(self):
+		if self.is_static:
+			return 'Route(static,%s,path=%s)' % (self.method, self.path)
+		return 'Route(dynamic,%s,path=%s)' % (self.method, self.path)
+
+	__repr__ = __str__
+
+
+class StaticFileRoute(object):
+	def __init__(self):
+		self.method = 'Get'
+		self.is_static = False
+		self.route = re.compile('^/static/(.+)$')
+
+	def match(self, url):
+		if url.startwith('/static/'):
+			return (url[1:], )
+		return None
+
+	def __call__(self, *args):
+		fpath = os.path.join(ctx.application.document_root, args[0])
+        if not os.path.isfile(fpath):
+            raise notfound()
+        fext = os.path.splitext(fpath)[1]
+        ctx.response.content_type = mimetypes.types_map.get(fext.lower(), 'application/octet-stream')
+        return _static_file_generator(fpath)
