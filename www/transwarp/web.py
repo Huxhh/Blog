@@ -337,46 +337,186 @@ def _build_regex(path):
 
 
 class Route(object):
-	def __init__(self, func):
-		self.path = func.__web_route__
-		self.method = func.__web_method__
-		self.is_static = _re_route.search(self.path) is None
-		if not self.is_static:
-			self.route = re.compile(_build_regex(self.path))
-		self.func = func
 
-	def match(self, url):
-		m = self.path.match(url)
-		if m:
-			return m.groups()
-		return None
+    def __init__(self, func):
+        self.path = func.__web_route__
+        self.method = func.__web_method__
+        self.is_static = _re_route.search(self.path) is None
+        if not self.is_static:
+            self.route = re.compile(_build_regex(self.path))
+        self.func = func
 
-	def __call__(self, *args):
-		return self.func(*args)
+    def match(self, url):
+        m = self.route.match(url)
+        if m:
+            return m.groups()
+        return None
 
-	def __str__(self):
-		if self.is_static:
-			return 'Route(static,%s,path=%s)' % (self.method, self.path)
-		return 'Route(dynamic,%s,path=%s)' % (self.method, self.path)
+    def __call__(self, *args):
+        return self.func(*args)
 
-	__repr__ = __str__
+    def __str__(self):
+        if self.is_static:
+            return 'Route(static,%s,path=%s)' % (self.method, self.path)
+        return 'Route(dynamic,%s,path=%s)' % (self.method, self.path)
+
+    __repr__ = __str__
+
+
+def _static_file_generator(fpath):
+    BLOCK_SIZE = 8192
+    with open(fpath, 'rb') as f:
+        block = f.read(BLOCK_SIZE)
+        while block:
+            yield block
+            block = f.read(BLOCK_SIZE)
 
 
 class StaticFileRoute(object):
-	def __init__(self):
-		self.method = 'Get'
-		self.is_static = False
-		self.route = re.compile('^/static/(.+)$')
 
-	def match(self, url):
-		if url.startwith('/static/'):
-			return (url[1:], )
-		return None
+    def __init__(self):
+        self.method = 'GET'
+        self.is_static = False
+        self.route = re.compile('^/static/(.+)$')
 
-	def __call__(self, *args):
-		fpath = os.path.join(ctx.application.document_root, args[0])
+    def match(self, url):
+        if url.startswith('/static/'):
+            return (url[1:], )
+        return None
+
+    def __call__(self, *args):
+        fpath = os.path.join(ctx.application.document_root, args[0])
         if not os.path.isfile(fpath):
             raise notfound()
         fext = os.path.splitext(fpath)[1]
         ctx.response.content_type = mimetypes.types_map.get(fext.lower(), 'application/octet-stream')
         return _static_file_generator(fpath)
+
+
+def favicon_handler():
+    return static_file_handler('/favicon.ico')
+
+
+class MultipartFile(object):
+    def __init__(self, storage):
+        self.filename = _to_unicode(storage.filename)
+        self.file = storage.file
+
+
+class Request(object):
+    def __init__(self, environ):
+        self._environ = environ
+
+    def _parse_input(self):
+        def _convert(item):
+            if isinstance(item, list):
+                return [_to_unicode(i.value) for i in item]
+            if item.filename:
+                return MultipartFile(item)
+            return _to_unicode(item.value)
+        fs = cgi.FieldStorage(fp=self._environ['wsgi.input'], environ=self._environ, keep_blank_values=True)
+        inputs = dict()
+        for key in fs:
+            inputs[key] = _convert(fs[key])
+        return inputs
+
+    def _get_raw_input(self):
+        if not hasattr(self, '_raw_input'):
+            self._raw_input = self._parse_input()
+        return self._raw_input
+
+    def __getitem__(self, key):
+        r = self._get_raw_input()[key]
+        if isinstance(r, list):
+            return r[0]
+        return r
+
+    def get(self, key, default = None):
+        r = self._get_raw_input().get(key, default)
+        if isinstance(r, list):
+            return r[0]
+        return r
+
+    def gets(self, key):
+        r = self._get_raw_input()[key]
+        if isinstance(r, list):
+            return r[:]
+        return [r]
+
+    def input(self, **kw):
+        copy = Dict(**kw)
+        raw = self._get_raw_input()
+        for k, v in raw.iteritems():
+            copy[k] = v[0] if isinstance(v, list) else v
+            return copy
+
+    def get_body(self):
+        fp = self._environ['wsgi.input']
+        return fp.read()
+
+    @property
+    def remote_addr(self):
+        return self._environ.get('REMOTE_ADDR', '0.0.0.0')
+
+    @property
+    def document_root(self):
+        return self._environ.get('DOCUMENT_ROOT', '')
+
+    @property
+    def query_string(self):
+        return self._environ.get('QUERY_STRING', '')
+
+    @property
+    def environ(self):
+        return self._environ
+
+    @property
+    def request_method(self):
+        return self._environ['REQUEST_METHOD']
+
+    @property
+    def path_info(self):
+        return urllib.unquote(self._environ.get('PATH_INFO', ''))
+
+    @property
+    def host(self):
+        return self._environ.get('HTTP_HOST', '')
+
+    def _get_headers(self):
+        if not hasattr(self, '_headers'):
+            hdrs = {}
+            for k, v in self._environ.iteritems():
+                if k.startswith('HTTP_'):
+                    # convert 'HTTP_ACCEPT_ENCODING' to 'ACCEPT-ENCODING'
+                    hdrs[k[5:].replace('_', '-').upper()] = v.decode('utf-8')
+            self._headers = hdrs
+        return self._headers
+
+    @property
+    def headers(self):
+        return Dict(**self._get_headers())
+
+    def header(self, header, default = None):
+        return self._get_headers().get(header.upper(), default)
+
+    def _get_cookies(self):
+        if not hasattr(self, '_cookies'):
+            cookies = {}
+            cookie_str = self._environ.get('HTTP_COOKIE')
+            if cookie_str:
+                for c in cookie_str.split(';'):
+                    pos = c.find('=')
+                    if pos>0:
+                        cookies[c[:pos].strip()] = _unquote(c[pos+1:])
+            self._cookies = cookies
+        return self._cookies
+
+    @property
+    def cookies(self):
+        return Dict(**self._get_cookies())
+
+    def cookie(self, name, default = None):
+        return self._get_cookies().get(name, default)
+
+
+UTC_0 = UTC('+00:00')
