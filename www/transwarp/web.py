@@ -66,7 +66,7 @@ class UTC(datetime.tzinfo):
         utc = str(utc.strip().upper)
         mt = _RE_TZ.match(utc)
         if mt:
-            minus = mt.group(1)=='-'
+            minus = mt.group(1) == '-'
             h = int(mt.group(2))
             m = int(mt.group(3))
             if minus:
@@ -521,7 +521,7 @@ class Request(object):
         return self._get_cookies().get(name, default)
 
 
-UTC_0 = UTC('+00:00')
+# UTC_0 = UTC('+00:00')
 
 
 class Response(object):
@@ -739,11 +739,6 @@ def _load_module(module_name):
 class WSGIApplication(object):
 
     def __init__(self, document_root=None, **kw):
-        '''
-        Init a WSGIApplication.
-        Args:
-          document_root: document root path.
-        '''
         self._running = False
         self._document_root = document_root
 
