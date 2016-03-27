@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 from models import User, Blog, Comment
 
 from transwarp import db

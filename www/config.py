@@ -1,5 +1,5 @@
 __author__ = 'Huxh'
-
+# -*- coding: UTF-8 -*-  
 import config_default
 
 class Dict(dict):

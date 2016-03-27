@@ -32,7 +32,7 @@ class Dict(dict):
 
 _TIMEDELTA_ZERO = datetime.timedelta(0)
 
-_RE_TZ = re.compile('^([\+\-])([0-9]{1,2})\:([0-9]{1,2})$')
+_RE_TZ = re.compile('^([\+\-])([0-9]{1,2}):([0-9]{1,2})$')
 
 
 class UTC(datetime.tzinfo):
@@ -63,7 +63,7 @@ class UTC(datetime.tzinfo):
     '''
 
     def __init__(self, utc):
-        utc = str(utc.strip().upper)
+        utc = str(utc.strip().upper())
         mt = _RE_TZ.match(utc)
         if mt:
             minus = mt.group(1) == '-'
@@ -521,7 +521,7 @@ class Request(object):
         return self._get_cookies().get(name, default)
 
 
-# UTC_0 = UTC('+00:00')
+UTC_0 = UTC('+00:00')
 
 
 class Response(object):
