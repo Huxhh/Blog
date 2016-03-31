@@ -5,10 +5,13 @@
 {% block beforehead %}
 
 <script>
+
 var
     action = '{{ action }}',
     redirect = '{{ redirect }}';
+
 var vm;
+
 $(function () {
     vm = new Vue({
         el: '#form-blog',
@@ -33,6 +36,7 @@ $(function () {
         }
     });
 });
+
 </script>
 
 {% endblock %}

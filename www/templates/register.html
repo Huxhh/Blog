@@ -1,4 +1,3 @@
-
 {% extends '__base__.html' %}
 
 {% block title %}注册{% endblock %}
@@ -6,10 +5,12 @@
 {% block beforehead %}
 
 <script>
+
 function validateEmail(email) {
     var re = /^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$/;
     return re.test(email.toLowerCase());
 }
+
 $(function () {
     var vm = new Vue({
         el: '#form-register',
@@ -52,6 +53,7 @@ $(function () {
         }
     });
 });
+
 </script>
 
 {% endblock %}
@@ -75,15 +77,15 @@ $(function () {
                 </div>
             </div>
             <div class="uk-form-row">
-                <label class="uk-form-label">输入密码:</label>
+                <label class="uk-form-label">输入口令:</label>
                 <div class="uk-form-controls">
-                    <input v-model="password1" type="password" maxlength="50" placeholder="输入密码" class="uk-width-1-1">
+                    <input v-model="password1" type="password" maxlength="50" placeholder="输入口令" class="uk-width-1-1">
                 </div>
             </div>
             <div class="uk-form-row">
-                <label class="uk-form-label">重复密码:</label>
+                <label class="uk-form-label">重复口令:</label>
                 <div class="uk-form-controls">
-                    <input v-model="password2" type="password" maxlength="50" placeholder="重复密码" class="uk-width-1-1">
+                    <input v-model="password2" type="password" maxlength="50" placeholder="重复口令" class="uk-width-1-1">
                 </div>
             </div>
             <div class="uk-form-row">

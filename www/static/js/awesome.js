@@ -1,6 +1,5 @@
-/**
- * Created by Lenovo on 2016/3/27.
- */
+// awesome.js
+
 function showError(err) {
     var alert = $('div.uk-alert-danger');
     if (err) {

@@ -14,7 +14,7 @@ def dumps(obj):
 class APIError(StandardError):
     def __init__(self, error, data = '', message = ''):
         super(APIError, self).__init__(message)
-        self.erroor = error
+        self.error = error
         self.data = data
         self.message = message
 

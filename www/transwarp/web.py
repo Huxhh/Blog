@@ -18,7 +18,7 @@ ctx = threading.local()
 class Dict(dict):
     def __init__(self, names = (), values = (), **kw):
         super(Dict, self).__init__(**kw)
-        for k,v in zip(names, values):
+        for k, v in zip(names, values):
             self[k] = v
 
     def __getattr__(self, key):
@@ -398,7 +398,6 @@ class StaticFileRoute(object):
 #     return static_file_handler('/favicon.ico')
 
 
-
 class MultipartFile(object):
     def __init__(self, storage):
         self.filename = _to_unicode(storage.filename)
@@ -450,7 +449,7 @@ class Request(object):
         raw = self._get_raw_input()
         for k, v in raw.iteritems():
             copy[k] = v[0] if isinstance(v, list) else v
-            return copy
+        return copy
 
     def get_body(self):
         fp = self._environ['wsgi.input']
@@ -508,7 +507,7 @@ class Request(object):
             if cookie_str:
                 for c in cookie_str.split(';'):
                     pos = c.find('=')
-                    if pos>0:
+                    if pos > 0:
                         cookies[c[:pos].strip()] = _unquote(c[pos+1:])
             self._cookies = cookies
         return self._cookies
@@ -551,7 +550,7 @@ class Response(object):
         if key in self._headers:
             del self._headers[key]
 
-    def set_headers(self, name, value):
+    def set_header(self, name, value):
         key = name.upper()
         if not key in _RESPONSE_HEADER_DICT:
             key = name
@@ -564,7 +563,7 @@ class Response(object):
     @content_type.setter
     def content_type(self, value):
         if value:
-            self.set_headers('CONTENT-TYPE', value)
+            self.set_header('CONTENT-TYPE', value)
         else:
             self.unset_header('CONTENT-TYPE')
 
@@ -826,7 +825,7 @@ class WSGIApplication(object):
                 for fn in self._post_dynamic:
                     args = fn.match(path_info)
                     if args:
-                        return fn(args)
+                        return fn(*args)
                 raise notfound()
             raise badrequest()
 

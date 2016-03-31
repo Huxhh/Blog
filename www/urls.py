@@ -111,13 +111,13 @@ _RE_EMAIL = re.compile(r'^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$'
 _RE_MD5 = re.compile(r'^[0-9a-f]{32}$')
 
 
-@view('blogs.html')
-@get('/')
-def test_users():
-    blogs = Blog.find_all()
-    # 查找登陆用户:
-    user = User.find_first('where email=?', 'admin@example.com')
-    return dict(blogs=blogs, user=user)
+# @view('blogs.html')
+# @get('/')
+# def test_users():
+#     blogs = Blog.find_all()
+#     # 查找登陆用户:
+#     user = User.find_first('where email=?', 'admin@example.com')
+#     return dict(blogs=blogs, user=user)
 
 
 @api
