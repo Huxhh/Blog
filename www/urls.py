@@ -93,7 +93,7 @@ def blog(blog_id):
         raise notfound()
     blog.html_content = markdown2.markdown(blog.content)
     comments = Comment.find_by('where blog_id = ? order by created_at desc limit 1000', blog_id)
-    return dict(blog = blog, comments = comments, user = ctx.requset.user)
+    return dict(blog = blog, comments = comments, user = ctx.request.user)
 
 
 @view('signin.html')
