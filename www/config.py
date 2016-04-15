@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 __author__ = 'Huxh'
-# -*- coding: UTF-8 -*-  
+
 import config_default
 
 class Dict(dict):

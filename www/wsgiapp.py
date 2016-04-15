@@ -1,5 +1,5 @@
-# -*- coding: UTF-8 -*-
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import logging;logging.basicConfig(level = logging.INFO)
 
 import os, time

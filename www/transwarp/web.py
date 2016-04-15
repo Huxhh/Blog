@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import types, os, re, cgi, sys, time, datetime, functools, mimetypes, threading, logging, urllib, traceback

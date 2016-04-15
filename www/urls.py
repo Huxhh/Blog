@@ -1,4 +1,5 @@
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 __author__ = 'Huxh'
 
 import logging, os, re, time, base64, hashlib

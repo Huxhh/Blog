@@ -1,4 +1,5 @@
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import time, uuid
 
 from transwarp.db import next_id
